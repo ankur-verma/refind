@@ -1,0 +1,17 @@
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/bin/Debug/net10.0/Cortex.Application.deps.json
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/bin/Debug/net10.0/Cortex.Application.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/bin/Debug/net10.0/Cortex.Application.pdb
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/bin/Debug/net10.0/Cortex.Domain.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/bin/Debug/net10.0/Cortex.SharedKernel.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/bin/Debug/net10.0/Cortex.Domain.pdb
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/bin/Debug/net10.0/Cortex.SharedKernel.pdb
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.Application.csproj.AssemblyReference.cache
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.Application.GeneratedMSBuildEditorConfig.editorconfig
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.Application.AssemblyInfoInputs.cache
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.Application.AssemblyInfo.cs
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.Application.csproj.CoreCompileInputs.cache
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.A.9C051D84.Up2Date
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.Application.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/refint/Cortex.Application.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/Cortex.Application.pdb
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/obj/Debug/net10.0/ref/Cortex.Application.dll

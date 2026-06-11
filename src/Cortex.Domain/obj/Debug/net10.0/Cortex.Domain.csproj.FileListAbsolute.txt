@@ -1,0 +1,15 @@
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/bin/Debug/net10.0/Cortex.Domain.deps.json
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/bin/Debug/net10.0/Cortex.Domain.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/bin/Debug/net10.0/Cortex.Domain.pdb
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/bin/Debug/net10.0/Cortex.SharedKernel.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/bin/Debug/net10.0/Cortex.SharedKernel.pdb
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.Domain.csproj.AssemblyReference.cache
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.Domain.AssemblyInfoInputs.cache
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.Domain.AssemblyInfo.cs
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.Domain.csproj.CoreCompileInputs.cache
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.D.1F360260.Up2Date
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.Domain.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/refint/Cortex.Domain.dll
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/Cortex.Domain.pdb
+/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Domain/obj/Debug/net10.0/ref/Cortex.Domain.dll

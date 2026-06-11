@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "dgSpecHash": "Z2mLvl2FsfE=",
+  "success": true,
+  "projectFilePath": "/Users/rishabhwadhwa/Documents/refind.ai/Cortex/src/Cortex.Application/Cortex.Application.csproj",
+  "expectedPackageFiles": [
+    "/Users/rishabhwadhwa/.nuget/packages/automapper/16.1.1/automapper.16.1.1.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/fluentvalidation/12.1.1/fluentvalidation.12.1.1.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.0/microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.extensions.logging.abstractions/10.0.0/microsoft.extensions.logging.abstractions.10.0.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.extensions.options/10.0.0/microsoft.extensions.options.10.0.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.extensions.primitives/10.0.0/microsoft.extensions.primitives.10.0.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.identitymodel.abstractions/8.14.0/microsoft.identitymodel.abstractions.8.14.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.identitymodel.jsonwebtokens/8.14.0/microsoft.identitymodel.jsonwebtokens.8.14.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.identitymodel.logging/8.14.0/microsoft.identitymodel.logging.8.14.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/microsoft.identitymodel.tokens/8.14.0/microsoft.identitymodel.tokens.8.14.0.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/npgsql/8.0.5/npgsql.8.0.5.nupkg.sha512",
+    "/Users/rishabhwadhwa/.nuget/packages/pgvector/0.3.2/pgvector.0.3.2.nupkg.sha512"
+  ],
+  "logs": []
+}
