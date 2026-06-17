@@ -1,11 +1,5 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Cortex.AI/Cortex.AI.csproj" />
-    <Project Path="src/Cortex.API/Cortex.API.csproj" />
-    <Project Path="src/Cortex.Application/Cortex.Application.csproj" />
-    <Project Path="src/Cortex.Domain/Cortex.Domain.csproj" />
-    <Project Path="src/Cortex.Infrastructure/Cortex.Infrastructure.csproj" />
-    <Project Path="src/Cortex.Persistence/Cortex.Persistence.csproj" />
-    <Project Path="src/Cortex.SharedKernel/Cortex.SharedKernel.csproj" />
+    <Project Path="src/Cortex/Cortex.csproj" />
   </Folder>
 </Solution>
