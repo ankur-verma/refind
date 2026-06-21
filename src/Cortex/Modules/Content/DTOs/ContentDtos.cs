@@ -28,6 +28,16 @@ public class ContentDetailResponse : ContentItemResponse
     public string? RawText { get; set; }
     public string? QuickSparkSummary { get; set; }
     public List<ActionItemResponse> ActionItems { get; set; } = new();
+    public List<VideoSegmentResponse> VideoSegments { get; set; } = new();
+}
+
+public class VideoSegmentResponse
+{
+    public Guid Id { get; set; }
+    public int StartSeconds { get; set; }
+    public int EndSeconds { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Summary { get; set; }
 }
 
 public class ActionItemResponse

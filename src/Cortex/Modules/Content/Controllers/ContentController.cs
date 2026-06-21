@@ -116,6 +116,14 @@ public class ContentController : ControllerBase
                 SequenceOrder = a.SequenceOrder,
                 IsCompleted = a.IsCompleted
             }).ToList() ?? new(),
+            VideoSegments = item.VideoSegments?.Select(v => new VideoSegmentResponse
+            {
+                Id = v.Id,
+                StartSeconds = v.StartSeconds,
+                EndSeconds = v.EndSeconds,
+                Title = v.Title,
+                Summary = v.Summary
+            }).ToList() ?? new(),
             Tags = item.ContentItemTags?.Select(t => t.Tag.Name).ToList() ?? new()
         }));
     }

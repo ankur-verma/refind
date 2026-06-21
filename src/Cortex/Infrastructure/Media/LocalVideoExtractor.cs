@@ -377,8 +377,10 @@ public class LocalVideoExtractor
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
 
-        if (process.ExitCode != 0 && !string.IsNullOrWhiteSpace(stderr))
-            _logger.LogDebug("yt-dlp stderr: {Stderr}", stderr);
+        if (process.ExitCode != 0)
+        {
+            _logger.LogWarning("yt-dlp exited with code {ExitCode}. Stderr: {Stderr}", process.ExitCode, stderr);
+        }
 
         return stdout;
     }

@@ -286,6 +286,43 @@ namespace Cortex.Database.Migrations
                     b.ToTable("ActionItems", (string)null);
                 });
 
+            modelBuilder.Entity("Cortex.Modules.Content.Entities.AutoCollection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("UserIntentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserIntentId");
+
+                    b.ToTable("AutoCollections", (string)null);
+                });
+
             modelBuilder.Entity("Cortex.Modules.Content.Entities.ContentItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -437,6 +474,42 @@ namespace Cortex.Database.Migrations
                     b.ToTable("Tags", (string)null);
                 });
 
+            modelBuilder.Entity("Cortex.Modules.Content.Entities.VideoSegment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ContentItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EndSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("StartSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentItemId");
+
+                    b.ToTable("VideoSegments", (string)null);
+                });
+
             modelBuilder.Entity("Cortex.Modules.Drip.Entities.DripStep", b =>
                 {
                     b.Property<Guid>("Id")
@@ -579,6 +652,116 @@ namespace Cortex.Database.Migrations
                     b.ToTable("ChatSessions", (string)null);
                 });
 
+            modelBuilder.Entity("Cortex.Modules.Search.Entities.UserIntent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GoalDescription")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserIntents", (string)null);
+                });
+
+            modelBuilder.Entity("Cortex.Modules.Search.Entities.UserInteraction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ContentItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DurationSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("InteractionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SearchQuery")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentItemId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserInteractions", (string)null);
+                });
+
+            modelBuilder.Entity("Cortex.Modules.Search.Entities.UserInterestProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastCalculated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Trend")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserInterestProfiles", (string)null);
+                });
+
             modelBuilder.Entity("Cortex.Modules.Auth.Entities.Subscription", b =>
                 {
                     b.HasOne("Cortex.Modules.Auth.Entities.User", "User")
@@ -634,6 +817,24 @@ namespace Cortex.Database.Migrations
                     b.Navigation("ContentItem");
                 });
 
+            modelBuilder.Entity("Cortex.Modules.Content.Entities.AutoCollection", b =>
+                {
+                    b.HasOne("Cortex.Modules.Auth.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Cortex.Modules.Search.Entities.UserIntent", "UserIntent")
+                        .WithMany()
+                        .HasForeignKey("UserIntentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+
+                    b.Navigation("UserIntent");
+                });
+
             modelBuilder.Entity("Cortex.Modules.Content.Entities.ContentItem", b =>
                 {
                     b.HasOne("Cortex.Modules.Auth.Entities.User", "User")
@@ -669,6 +870,17 @@ namespace Cortex.Database.Migrations
                     b.HasOne("Cortex.Modules.Content.Entities.ContentItem", "ContentItem")
                         .WithOne("Payload")
                         .HasForeignKey("Cortex.Modules.Content.Entities.ContentPayload", "ContentItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContentItem");
+                });
+
+            modelBuilder.Entity("Cortex.Modules.Content.Entities.VideoSegment", b =>
+                {
+                    b.HasOne("Cortex.Modules.Content.Entities.ContentItem", "ContentItem")
+                        .WithMany()
+                        .HasForeignKey("ContentItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -723,6 +935,46 @@ namespace Cortex.Database.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Cortex.Modules.Search.Entities.UserIntent", b =>
+                {
+                    b.HasOne("Cortex.Modules.Auth.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Cortex.Modules.Search.Entities.UserInteraction", b =>
+                {
+                    b.HasOne("Cortex.Modules.Content.Entities.ContentItem", "ContentItem")
+                        .WithMany()
+                        .HasForeignKey("ContentItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Cortex.Modules.Auth.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContentItem");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Cortex.Modules.Search.Entities.UserInterestProfile", b =>
+                {
+                    b.HasOne("Cortex.Modules.Auth.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Cortex.Modules.Auth.Entities.User", b =>

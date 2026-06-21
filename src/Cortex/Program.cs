@@ -40,7 +40,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173")
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://localhost:5175")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -98,6 +98,7 @@ else
 {
     builder.Services.AddHttpClient<IAIExtractionService, GeminiExtractionService>();
 }
+builder.Services.AddHttpClient<IPythonAIService, PythonAIService>();
 builder.Services.AddHostedService<AIExtractionWorker>();
 
 // Register Vertical Slice Modules
@@ -105,6 +106,14 @@ builder.Services.AddAuthModule(builder.Configuration);
 builder.Services.AddContentModule(builder.Configuration);
 builder.Services.AddDripModule(builder.Configuration);
 builder.Services.AddSearchModule(builder.Configuration);
+
+// QuickBoost AI services registration
+builder.Services.AddScoped<Cortex.Services.IInterestProfiler, Cortex.Services.InterestProfiler>();
+builder.Services.AddScoped<Cortex.Services.IVideoFetcher, Cortex.Services.VideoFetcher>();
+builder.Services.AddScoped<Cortex.Services.ITranscriptionService, Cortex.Services.TranscriptionService>();
+builder.Services.AddScoped<Cortex.Services.IEmotionAnalyzer, Cortex.Services.EmotionAnalyzer>();
+builder.Services.AddScoped<Cortex.Services.IClipSelector, Cortex.Services.ClipSelector>();
+
 
 // Setup Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();

@@ -28,6 +28,11 @@ public class CortexDbContext : DbContext
     public DbSet<UserMindset> UserMindsets => Set<UserMindset>();
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<UserInteraction> UserInteractions => Set<UserInteraction>();
+    public DbSet<UserInterestProfile> UserInterestProfiles => Set<UserInterestProfile>();
+    public DbSet<UserIntent> UserIntents => Set<UserIntent>();
+    public DbSet<VideoSegment> VideoSegments => Set<VideoSegment>();
+    public DbSet<AutoCollection> AutoCollections => Set<AutoCollection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

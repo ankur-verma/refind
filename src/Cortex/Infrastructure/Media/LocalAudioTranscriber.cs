@@ -77,6 +77,9 @@ public class LocalAudioTranscriber : IDisposable
 
     private async Task<WhisperFactory?> EnsureModelLoadedAsync(CancellationToken ct)
     {
+        _logger.LogWarning("Local Whisper transcription is disabled on x86_64 macOS to prevent native library crash.");
+        return null;
+
         if (_factory is not null)
             return _factory;
 

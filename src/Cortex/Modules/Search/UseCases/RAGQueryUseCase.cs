@@ -11,6 +11,7 @@ using Cortex.Modules.Content.Entities;
 using Cortex.Modules.Content.Persistence;
 using Cortex.Modules.Search.DTOs;
 using Cortex.Modules.Search.Services;
+using Cortex.Modules.Search.Entities;
 using Cortex.Shared;
 using Microsoft.EntityFrameworkCore;
 using Pgvector;
@@ -152,6 +153,17 @@ public class RAGQueryUseCase
             });
         }
 
+        // 1.5. Log search query in UserInteractions table
+        var searchInteraction = new UserInteraction
+        {
+            UserId = userId,
+            InteractionType = "Search",
+            SearchQuery = request.Query,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.UserInteractions.Add(searchInteraction);
+        await _context.SaveChangesAsync(ct);
+
         // 2. Fetch or Compile User Mindset
         var mindset = await _context.UserMindsets.FirstOrDefaultAsync(m => m.UserId == userId && !m.IsDeleted, ct);
         if (mindset is null)
@@ -161,12 +173,27 @@ public class RAGQueryUseCase
 
         var focusAreas = JsonSerializer.Deserialize<List<string>>(mindset.FocusAreasJson) ?? new List<string>();
 
+        // Fetch top interest categories and active intents
+        var topInterests = await _context.UserInterestProfiles
+            .Where(x => x.UserId == userId && !x.IsDeleted && x.Score >= 50)
+            .OrderByDescending(x => x.Score)
+            .Select(x => $"{x.Category} ({x.Score}%)")
+            .ToListAsync(ct);
+
+        var activeIntents = await _context.UserIntents
+            .Where(x => x.UserId == userId && !x.IsDeleted && !x.IsResolved)
+            .OrderByDescending(x => x.Confidence)
+            .Select(x => x.GoalDescription)
+            .ToListAsync(ct);
+
         // 3. Prompt Google Gemini using mindset guidelines
         var systemMessage = $@"You are Antigravity, a personalized learning assistant representing the user's external brain and cognitive memory space.
 Your job is to answer the user's query utilizing ONLY the provided Memory Context records below. Do not use outside facts.
 
-Crucially, you must tailor your response style, depth, tone, and formatting to align with the user's current Cognitive Mindset Profile:
+Crucially, you must tailor your response style, depth, tone, and formatting to align with the user's current Cognitive Mindset Profile and Interests:
 - **Primary Interests / Focus Areas**: {string.Join(", ", focusAreas)}
+- **General Long-Term Interests**: {string.Join(", ", topInterests)}
+- **Active Goals / Intents**: {string.Join(", ", activeIntents)}
 - **Information Preference**: {mindset.ConsumptionPreference} (Concise = short and direct, Detailed Deep Dive = extensive details and steps, Action Oriented = instruction focused, Code Heavy = focus on source code examples)
 - **Mindset Narrative**: {mindset.NarrativeSummary}
 

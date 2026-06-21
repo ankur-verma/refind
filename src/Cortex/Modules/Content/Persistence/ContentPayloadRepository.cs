@@ -43,7 +43,6 @@ public class ContentPayloadRepository : IContentPayloadRepository
                 .Include(p => p.ContentItem)
                 .Where(p => p.ContentItem.UserId == userId && p.GeminiEmbedding != null)
                 .Select(p => new { Payload = p, Distance = p.GeminiEmbedding!.CosineDistance(queryVector) })
-                .Where(x => x.Distance < 0.35) // stricter threshold for Gemini embeddings
                 .OrderBy(x => x.Distance)
                 .Take(limit)
                 .ToListAsync(ct);

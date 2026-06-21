@@ -1,0 +1,20 @@
+[
+  {
+    "videoId": "b1e5c6a3-6d4f-4b2a-9c8f-1234567890ab",
+    "videoUrl": "https://example.com/videos/video1.mp4",
+    "title": "Understanding Quantum Computing",
+    "thumbnailUrl": "https://example.com/thumbnails/video1.jpg",
+    "category": "Technology",
+    "startSeconds": 0,
+    "endSeconds": 90
+  },
+  {
+    "videoId": "c2f7d8b9-1a2b-3c4d-5e6f-0987654321cd",
+    "videoUrl": "https://example.com/videos/video2.mp4",
+    "title": "Quantum Entanglement Explained",
+    "thumbnailUrl": "https://example.com/thumbnails/video2.jpg",
+    "category": "Technology",
+    "startSeconds": 0,
+    "endSeconds": 90
+  }
+]

@@ -19,6 +19,7 @@ public class ContentItemRepository : IContentItemRepository
             .Include(x => x.Payload)
             .Include(x => x.ActionItems.OrderBy(a => a.SequenceOrder))
             .Include(x => x.ContentItemTags).ThenInclude(ct => ct.Tag)
+            .Include(x => x.VideoSegments.OrderBy(vs => vs.StartSeconds))
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, ct);
 
     public async Task<PagedList<ContentItem>> GetFeedAsync(Guid userId, EnergyLevel? energyLevel, PlatformType? platformType, int page, int pageSize, CancellationToken ct = default)

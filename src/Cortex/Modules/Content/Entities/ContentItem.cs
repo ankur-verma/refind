@@ -30,4 +30,5 @@ public class ContentItem : BaseEntity, IAggregateRoot
     public ICollection<ActionItem> ActionItems { get; set; } = new List<ActionItem>();
     public ICollection<ContentItemTag> ContentItemTags { get; set; } = new List<ContentItemTag>();
     public ICollection<DripTrack> DripTracks { get; set; } = new List<DripTrack>();
+    public ICollection<VideoSegment> VideoSegments { get; set; } = new List<VideoSegment>();
 }

@@ -18,6 +18,8 @@ public static class SearchModule
         services.AddScoped<RefreshMindsetUseCase>();
         services.AddScoped<UpdateMindsetUseCase>();
         services.AddScoped<RAGQueryUseCase>();
+        services.AddScoped<TrackInteractionUseCase>();
+        services.AddScoped<GetInterestProfileUseCase>();
         
         services.AddScoped<Cortex.Modules.Search.Persistence.IChatRepository, Cortex.Modules.Search.Persistence.ChatRepository>();
         services.AddScoped<GlobalChatUseCase>();

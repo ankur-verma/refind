@@ -278,6 +278,40 @@ public class AIExtractionWorker : BackgroundService
                 await tagRepo.AddContentItemTagAsync(contentItem.Id, tag.Id, ct);
             }
 
+            // Step 5.5: Segment video using Python AI Service
+            var platform = Enum.Parse<PlatformType>(message.PlatformType);
+            if (!isGated && (platform == PlatformType.YouTube || platform == PlatformType.Instagram))
+            {
+                try
+                {
+                    _logger.LogInformation("Requesting topic segments from Python AI service for video: {ContentItemId}", contentItem.Id);
+                    var pythonAiService = scope.ServiceProvider.GetRequiredService<IPythonAIService>();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<CortexDbContext>();
+
+                    var videoSegments = await pythonAiService.AnalyzeVideoAsync(contentItem.Id, contentItem.OriginalUrl, null, result.RawText, ct);
+                    if (videoSegments != null && videoSegments.Count > 0)
+                    {
+                        var segments = videoSegments.Select(s => new VideoSegment
+                        {
+                            ContentItemId = contentItem.Id,
+                            StartSeconds = s.StartSeconds,
+                            EndSeconds = s.EndSeconds,
+                            Title = s.Title,
+                            Summary = s.Summary,
+                            CreatedAt = DateTime.UtcNow
+                        }).ToList();
+
+                        dbContext.VideoSegments.AddRange(segments);
+                        await dbContext.SaveChangesAsync(ct);
+                        _logger.LogInformation("Saved {Count} video segments for content item {ContentItemId}", segments.Count, contentItem.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to generate video segments for content item {ContentItemId}", contentItem.Id);
+                }
+            }
+
             contentItem.Status = ContentStatus.Ready;
             await contentRepo.UpdateAsync(contentItem, ct);
             await cache.RemoveByPrefixAsync($"feed:{contentItem.UserId}:", ct);

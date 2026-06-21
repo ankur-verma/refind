@@ -32,4 +32,5 @@ public class ContentProcessingResult
     public int EstimatedConsumeTimeMins { get; set; }
     public EnergyLevel SuggestedEnergyLevel { get; set; }
     public List<string> SuggestedTags { get; set; } = new();
+    public List<Cortex.Modules.Content.Entities.VideoSegment> VideoSegments { get; set; } = new();
 }
