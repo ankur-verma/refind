@@ -25,7 +25,8 @@ public class RabbitMqSettings
     public int Port { get; set; } = 5672;
     public string UserName { get; set; } = "cortex";
     public string Password { get; set; } = "cortex_dev";
-    public string QueueName { get; set; } = "ai_extraction_queue";
+    public string ExtractionQueueName { get; set; } = "ai_extraction_queue";
+    public string BehaviorQueueName { get; set; } = "behavior_events_queue";
     public string DeadLetterExchange { get; set; } = "cortex.ai.dlx";
     public string DeadLetterQueueName { get; set; } = "ai_extraction_dead_letter_queue";
     public int RetryDelaySeconds { get; set; } = 10;

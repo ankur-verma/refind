@@ -34,19 +34,21 @@ public class ExceptionHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
+        var traceId = System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier;
+
         var (statusCode, errors) = exception switch
         {
             NotFoundException notFound => (HttpStatusCode.NotFound, new[] { notFound.Message }),
             ValidationException validation => (HttpStatusCode.BadRequest, validation.Errors.SelectMany(e => e.Value).ToArray()),
             ForbiddenException forbidden => (HttpStatusCode.Forbidden, new[] { forbidden.Message }),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, new[] { "Unauthorized access." }),
-            _ => (HttpStatusCode.InternalServerError, new[] { "An unexpected error occurred." })
+            _ => (HttpStatusCode.InternalServerError, new[] { "An unexpected error occurred.", $"Trace ID: {traceId}" })
         };
 
         if (statusCode == HttpStatusCode.InternalServerError)
-            _logger.LogError(exception, "Unhandled exception occurred");
+            _logger.LogError(exception, "Unhandled exception occurred. TraceId: {TraceId}", traceId);
         else
-            _logger.LogWarning(exception, "Handled exception: {StatusCode}", statusCode);
+            _logger.LogWarning(exception, "Handled exception: {StatusCode}. TraceId: {TraceId}", statusCode, traceId);
 
         context.Response.StatusCode = (int)statusCode;
         context.Response.ContentType = "application/json";

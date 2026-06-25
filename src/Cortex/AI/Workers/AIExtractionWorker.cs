@@ -85,25 +85,36 @@ public class AIExtractionWorker : BackgroundService
         var consumer = new AsyncEventingBasicConsumer(channel);
         consumer.ReceivedAsync += async (_, ea) =>
         {
-            try
+            var correlationId = Guid.NewGuid().ToString();
+            if (ea.BasicProperties.Headers is not null && 
+                ea.BasicProperties.Headers.TryGetValue("x-correlation-id", out var traceIdObj) && 
+                traceIdObj is byte[] bytes)
             {
-                var body = Encoding.UTF8.GetString(ea.Body.ToArray());
-                var message = JsonSerializer.Deserialize<AIExtractionMessage>(body);
-
-                if (message is not null)
-                    await ProcessContentAsync(message, stoppingToken);
-
-                await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, cancellationToken: stoppingToken);
+                correlationId = Encoding.UTF8.GetString(bytes);
             }
-            catch (Exception ex)
+
+            using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
             {
-                _logger.LogError(ex, "Error processing AI extraction message; routing to dead-letter queue");
-                await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false, cancellationToken: stoppingToken);
+                try
+                {
+                    var body = Encoding.UTF8.GetString(ea.Body.ToArray());
+                    var message = JsonSerializer.Deserialize<AIExtractionMessage>(body);
+
+                    if (message is not null)
+                        await ProcessContentAsync(message, stoppingToken);
+
+                    await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, cancellationToken: stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing AI extraction message; routing to dead-letter queue");
+                    await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false, cancellationToken: stoppingToken);
+                }
             }
         };
 
-        await channel.BasicConsumeAsync(queue: _settings.QueueName, autoAck: false, consumer: consumer, cancellationToken: stoppingToken);
-        _logger.LogInformation("AI extraction worker is consuming queue {QueueName}", _settings.QueueName);
+        await channel.BasicConsumeAsync(queue: _settings.ExtractionQueueName, autoAck: false, consumer: consumer, cancellationToken: stoppingToken);
+        _logger.LogInformation("AI extraction worker is consuming queue {QueueName}", _settings.ExtractionQueueName);
 
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
@@ -137,7 +148,7 @@ public class AIExtractionWorker : BackgroundService
         };
 
         await channel.QueueDeclareAsync(
-            queue: _settings.QueueName,
+            queue: _settings.ExtractionQueueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
@@ -148,189 +159,10 @@ public class AIExtractionWorker : BackgroundService
     private async Task ProcessContentAsync(AIExtractionMessage message, CancellationToken ct)
     {
         using var scope = _serviceProvider.CreateScope();
-        var contentRepo = scope.ServiceProvider.GetRequiredService<IContentItemRepository>();
-        var payloadRepo = scope.ServiceProvider.GetRequiredService<IContentPayloadRepository>();
-        var actionRepo = scope.ServiceProvider.GetRequiredService<IActionItemRepository>();
-        var tagRepo = scope.ServiceProvider.GetRequiredService<ITagRepository>();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var processorFactory = scope.ServiceProvider.GetRequiredService<IContentProcessorFactory>();
-        var aiService = scope.ServiceProvider.GetRequiredService<IAIExtractionService>();
-        var cache = scope.ServiceProvider.GetRequiredService<ICacheService>();
-
-        var contentItem = await contentRepo.GetByIdAsync(message.ContentItemId, ct);
-        if (contentItem is null) return;
-
-        try
-        {
-            // Step 1: Process content using factory-created processor
-            ContentProcessingResult result;
-            bool isGated = false;
-            try
-            {
-                var platformType = Enum.Parse<PlatformType>(message.PlatformType);
-                var processor = processorFactory.CreateProcessor(platformType);
-                result = await processor.ProcessAsync(message.Url, ct);
-
-                // If text is extremely short or empty, it could mean paywall or proprietary format
-                if (string.IsNullOrWhiteSpace(result.RawText) || result.RawText.Length < 10)
-                {
-                    isGated = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Content is gated or failed to ingest for URL: {Url}. Flagging for manual review.", message.Url);
-                isGated = true;
-                result = new ContentProcessingResult
-                {
-                    Title = ContentProcessorHelpers.CreateTitleFromUrl(message.Url),
-                    RawText = string.Empty,
-                    SuggestedEnergyLevel = EnergyLevel.BrainDead,
-                    EstimatedConsumeTimeMins = 1,
-                    SuggestedTags = new List<string> { "gated", "review-required" }
-                };
-            }
-
-            // Step 2: Update content item metadata
-            contentItem.Title = result.Title;
-            contentItem.HeroImageUrl = result.HeroImageUrl;
-            contentItem.EnergyLevel = result.SuggestedEnergyLevel;
-            contentItem.ConsumeTimeMins = result.EstimatedConsumeTimeMins;
-
-            // Step 3: Generate AI summary and embedding
-            string summary;
-            float[] embedding;
-
-            if (isGated)
-            {
-                summary = "Requires Manual Review.";
-                embedding = await aiService.GenerateEmbeddingAsync("Gated content requires manual review", ct);
-            }
-            else
-            {
-                summary = await aiService.GenerateSummaryAsync(result.RawText, ct);
-                embedding = await aiService.GenerateEmbeddingAsync(result.RawText, ct);
-            }
-
-            // Step 4: Save payload with heavy data
-            var payload = await payloadRepo.GetByContentItemIdAsync(contentItem.Id, ct);
-            if (payload is null)
-            {
-                payload = new ContentPayload
-                {
-                    ContentItemId = contentItem.Id,
-                    RawText = result.RawText,
-                    QuickSparkSummary = summary
-                };
-                if (_aiSettings.ActiveProvider == "LocalOllama")
-                    payload.OllamaEmbedding = new Vector(embedding);
-                else
-                    payload.GeminiEmbedding = new Vector(embedding);
-                    
-                await payloadRepo.AddAsync(payload, ct);
-            }
-            else
-            {
-                payload.RawText = result.RawText;
-                payload.QuickSparkSummary = summary;
-                
-                if (_aiSettings.ActiveProvider == "LocalOllama")
-                    payload.OllamaEmbedding = new Vector(embedding);
-                else
-                    payload.GeminiEmbedding = new Vector(embedding);
-                    
-                await payloadRepo.UpdateAsync(payload, ct);
-            }
-
-            // Step 5: Extract action items
-            if (!isGated)
-            {
-                var actions = await aiService.ExtractActionsAsync(result.RawText, ct);
-                var existingActions = await actionRepo.GetByContentItemIdAsync(contentItem.Id, ct);
-                if (existingActions.Count == 0)
-                {
-                    var actionItems = actions.Select(a => new ActionItem
-                    {
-                        ContentItemId = contentItem.Id,
-                        Description = a.Description,
-                        ItemType = a.Type == "Tool" ? ActionItemType.Tool : ActionItemType.Instruction,
-                        SequenceOrder = a.Order
-                    }).ToList();
-                    await actionRepo.AddRangeAsync(actionItems, ct);
-                }
-            }
-
-            // Step 6: Create tags
-            var existingTags = await tagRepo.GetByContentItemIdAsync(contentItem.Id, ct);
-            var existingTagNames = existingTags.Select(tag => tag.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            foreach (var tagName in result.SuggestedTags)
-            {
-                if (existingTagNames.Contains(tagName))
-                    continue;
-
-                var tag = await tagRepo.GetByNameAsync(tagName, ct);
-                if (tag is null)
-                {
-                    tag = new Tag { Name = tagName.ToLowerInvariant(), IsAIGenerated = true };
-                    await tagRepo.AddAsync(tag, ct);
-                    await unitOfWork.SaveChangesAsync(ct);
-                }
-                await tagRepo.AddContentItemTagAsync(contentItem.Id, tag.Id, ct);
-            }
-
-            // Step 5.5: Segment video using Python AI Service
-            var platform = Enum.Parse<PlatformType>(message.PlatformType);
-            if (!isGated && (platform == PlatformType.YouTube || platform == PlatformType.Instagram))
-            {
-                try
-                {
-                    _logger.LogInformation("Requesting topic segments from Python AI service for video: {ContentItemId}", contentItem.Id);
-                    var pythonAiService = scope.ServiceProvider.GetRequiredService<IPythonAIService>();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<CortexDbContext>();
-
-                    var videoSegments = await pythonAiService.AnalyzeVideoAsync(contentItem.Id, contentItem.OriginalUrl, null, result.RawText, ct);
-                    if (videoSegments != null && videoSegments.Count > 0)
-                    {
-                        var segments = videoSegments.Select(s => new VideoSegment
-                        {
-                            ContentItemId = contentItem.Id,
-                            StartSeconds = s.StartSeconds,
-                            EndSeconds = s.EndSeconds,
-                            Title = s.Title,
-                            Summary = s.Summary,
-                            CreatedAt = DateTime.UtcNow
-                        }).ToList();
-
-                        dbContext.VideoSegments.AddRange(segments);
-                        await dbContext.SaveChangesAsync(ct);
-                        _logger.LogInformation("Saved {Count} video segments for content item {ContentItemId}", segments.Count, contentItem.Id);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to generate video segments for content item {ContentItemId}", contentItem.Id);
-                }
-            }
-
-            contentItem.Status = ContentStatus.Ready;
-            await contentRepo.UpdateAsync(contentItem, ct);
-            await cache.RemoveByPrefixAsync($"feed:{contentItem.UserId}:", ct);
-            await unitOfWork.SaveChangesAsync(ct);
-            
-            await _hubContext.Clients.User(message.UserId.ToString()).SendAsync("ContentProcessed", new { id = contentItem.Id, status = 1 }, ct);
-
-            _logger.LogInformation("Successfully processed content item {ContentItemId}", contentItem.Id);
-        }
-        catch (Exception ex)
-        {
-            contentItem.Status = ContentStatus.Failed;
-            await contentRepo.UpdateAsync(contentItem, ct);
-            await unitOfWork.SaveChangesAsync(ct);
-            
-            await _hubContext.Clients.User(message.UserId.ToString()).SendAsync("ContentProcessed", new { id = contentItem.Id, status = 2 }, ct);
-            
-            _logger.LogError(ex, "Failed to process content item {ContentItemId}", contentItem.Id);
-        }
+        var pipeline = scope.ServiceProvider.GetRequiredService<Cortex.Modules.Content.Services.ContentIngestionPipeline>();
+        
+        var platformType = Enum.Parse<Cortex.Shared.Enums.PlatformType>(message.PlatformType);
+        await pipeline.ProcessAsync(message.ContentItemId, message.UserId, message.Url, platformType, ct);
     }
 }
 

@@ -104,14 +104,14 @@ def update_user_interest_profile(user_id: str, db_url: str, api_key: str, comple
             
             # 3. Save calculations in DB transaction
             # Delete old interest profile for the user
-            cur.execute('DELETE FROM "UserInterestProfiles" WHERE "UserId" = %s', (user_id,))
+            cur.execute('DELETE FROM "UserInterests" WHERE "UserId" = %s', (user_id,))
             
             # Insert new interest categories
             now = datetime.utcnow()
             for cat in data.get("categories", []):
                 profile_id = str(uuid.uuid4())
                 cur.execute("""
-                    INSERT INTO "UserInterestProfiles" ("Id", "UserId", "Category", "Score", "Trend", "LastCalculated", "CreatedAt", "IsDeleted")
+                    INSERT INTO "UserInterests" ("Id", "UserId", "Category", "Score", "Trend", "LastCalculated", "CreatedAt", "IsDeleted")
                     VALUES (%s, %s, %s, %s, %s, %s, %s, FALSE)
                 """, (profile_id, user_id, cat["category"], cat["score"], cat["trend"], now, now))
             

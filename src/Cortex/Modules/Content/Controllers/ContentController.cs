@@ -56,6 +56,41 @@ public class ContentController : ControllerBase
     }
 
     /// <summary>
+    /// Bulk import URLs (e.g. from JSON exports or CSVs).
+    /// </summary>
+    [HttpPost("bulk")]
+    public async Task<IActionResult> BulkSaveContent([FromBody] BulkSaveContentRequest request, CancellationToken ct)
+    {
+        if (request == null || request.Urls == null || !request.Urls.Any())
+            return BadRequest(ApiResponse<string>.Fail("No URLs provided."));
+
+        var userId = GetUserId();
+        var successCount = 0;
+        var duplicateCount = 0;
+        var failCount = 0;
+
+        foreach (var url in request.Urls)
+        {
+            try 
+            {
+                var result = await _saveUseCase.ExecuteAsync(userId, new SaveContentRequest(url), ct);
+                if (result.IsSuccess) successCount++;
+                else if (result.Error == "DUPLICATE_URL") duplicateCount++;
+                else failCount++;
+            }
+            catch (Exception)
+            {
+                failCount++;
+            }
+        }
+
+        return Ok(new { 
+            success = true, 
+            message = $"Import complete. {successCount} added, {duplicateCount} duplicates skipped, {failCount} failed." 
+        });
+    }
+
+    /// <summary>
     /// Get mood-filtered content feed for the Cognitive Dashboard.
     /// </summary>
     [HttpGet("feed")]
@@ -122,8 +157,19 @@ public class ContentController : ControllerBase
                 StartSeconds = v.StartSeconds,
                 EndSeconds = v.EndSeconds,
                 Title = v.Title,
-                Summary = v.Summary
-            }).ToList() ?? new(),
+                Summary = v.Summary,
+                SegmentType = v.SegmentType,
+                Metadata = new VideoSegmentMetadataResponse
+                {
+                    Topics = v.Metadata?.Topics ?? new(),
+                    Products = v.Metadata?.Products ?? new(),
+                    Locations = v.Metadata?.Locations ?? new(),
+                    Restaurants = v.Metadata?.Restaurants ?? new(),
+                    Tips = v.Metadata?.Tips ?? new(),
+                    Prices = v.Metadata?.Prices ?? new(),
+                    Recommendations = v.Metadata?.Recommendations ?? new()
+                }
+            }).ToList() ?? new List<VideoSegmentResponse>(),
             Tags = item.ContentItemTags?.Select(t => t.Tag.Name).ToList() ?? new()
         }));
     }

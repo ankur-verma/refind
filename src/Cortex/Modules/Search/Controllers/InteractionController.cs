@@ -104,12 +104,12 @@ public class InteractionController : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var normalizedCat = request.Category.Trim();
         
-        var profile = await _context.UserInterestProfiles
+        var profile = await _context.UserInterests
             .FirstOrDefaultAsync(p => p.UserId == userId && p.Category.ToLower() == normalizedCat.ToLower(), ct);
             
         if (profile is null)
         {
-            profile = new UserInterestProfile
+            profile = new UserInterest
             {
                 UserId = userId,
                 Category = normalizedCat,
@@ -119,7 +119,7 @@ public class InteractionController : ControllerBase
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             };
-            await _context.UserInterestProfiles.AddAsync(profile, ct);
+            await _context.UserInterests.AddAsync(profile, ct);
         }
         else
         {
@@ -127,7 +127,7 @@ public class InteractionController : ControllerBase
             profile.Trend = request.Trend;
             profile.LastCalculated = DateTime.UtcNow;
             profile.IsDeleted = false;
-            _context.UserInterestProfiles.Update(profile);
+            _context.UserInterests.Update(profile);
         }
         
         await _context.SaveChangesAsync(ct);
@@ -141,13 +141,13 @@ public class InteractionController : ControllerBase
     public async Task<IActionResult> DeleteCategory(string category, CancellationToken ct)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var profile = await _context.UserInterestProfiles
+        var profile = await _context.UserInterests
             .FirstOrDefaultAsync(p => p.UserId == userId && p.Category.ToLower() == category.ToLower() && !p.IsDeleted, ct);
             
         if (profile is not null)
         {
             profile.IsDeleted = true;
-            _context.UserInterestProfiles.Update(profile);
+            _context.UserInterests.Update(profile);
             await _context.SaveChangesAsync(ct);
         }
         

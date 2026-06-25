@@ -76,9 +76,67 @@ public class RAGQueryUseCase
         }
         else
         {
+            // HYBRID AGENTIC RAG - Phase 11
+            var intent = await _aiService.ExtractSearchIntentAsync(request.Query, ct);
             var matchedPayloads = new List<(ContentPayload Payload, double Similarity)>();
 
-            // Vector Search
+            // 1. KNOWLEDGE GRAPH RETRIEVER
+            if (intent.IsKnowledgeGraphQuery && (intent.Locations.Any() || intent.Entities.Any() || intent.Topics.Any()))
+            {
+                var kgItems = await _context.ContentItems
+                    .Include(c => c.Payload)
+                    .Include(c => c.Insight!)
+                        .ThenInclude(i => i.Locations)
+                            .ThenInclude(l => l.Location)
+                    .Include(c => c.Insight!)
+                        .ThenInclude(i => i.Entities)
+                            .ThenInclude(e => e.SemanticEntity)
+                    .Where(c => c.UserId == userId && !c.IsDeleted && c.Payload != null)
+                    .ToListAsync(ct);
+
+                foreach (var item in kgItems)
+                {
+                    bool match = false;
+                    var insight = item.Insight;
+                    if (insight != null)
+                    {
+                        var hasLocation = intent.Locations.Any(loc => insight.Locations.Any(il => il.Location != null && il.Location.Name.Contains(loc, StringComparison.OrdinalIgnoreCase)));
+                        var hasEntity = intent.Entities.Any(ent => insight.Entities.Any(ie => ie.SemanticEntity != null && ie.SemanticEntity.Name.Contains(ent, StringComparison.OrdinalIgnoreCase)));
+                        var hasTopic = intent.Topics.Any(top => insight.Topics != null && insight.Topics.Any(it => it.Contains(top, StringComparison.OrdinalIgnoreCase)));
+                        if (hasLocation || hasEntity || hasTopic) match = true;
+                    }
+                    if (match && !matchedPayloads.Any(p => p.Payload.ContentItemId == item.Id))
+                    {
+                        matchedPayloads.Add((item.Payload!, 0.95)); // High score for direct graph match
+                    }
+                }
+            }
+
+            // 2. COLLECTIONS RETRIEVER
+            if (intent.IsCollectionQuery && intent.Collections.Any())
+            {
+                foreach(var collectionName in intent.Collections)
+                {
+                    var collection = await _context.AutoCollections
+                        .Include(c => c.Memberships)
+                            .ThenInclude(m => m.ContentItem)
+                                .ThenInclude(ci => ci.Payload)
+                        .FirstOrDefaultAsync(c => c.UserId == userId && !c.IsDeleted && c.Name.ToLower().Contains(collectionName.ToLower()), ct);
+
+                    if (collection != null)
+                    {
+                        foreach(var member in collection.Memberships.Take(5))
+                        {
+                            if (member.ContentItem.Payload != null && !matchedPayloads.Any(p => p.Payload.ContentItemId == member.ContentItemId))
+                            {
+                                matchedPayloads.Add((member.ContentItem.Payload, 0.90));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. VECTOR SEARCH (Fallback/Hybrid)
             if (request.Mode.Equals("Vector", StringComparison.OrdinalIgnoreCase) || request.Mode.Equals("Hybrid", StringComparison.OrdinalIgnoreCase))
             {
                 var embedding = await _aiService.GenerateEmbeddingAsync(request.Query, ct);
@@ -87,19 +145,19 @@ public class RAGQueryUseCase
                 
                 foreach (var match in matches)
                 {
-                    var similarity = Math.Max(0, 1.0 - match.Distance);
-                    matchedPayloads.Add((match.Payload, similarity));
+                    if (!matchedPayloads.Any(p => p.Payload.ContentItemId == match.Payload.ContentItemId))
+                    {
+                        var similarity = Math.Max(0, 1.0 - match.Distance);
+                        matchedPayloads.Add((match.Payload, similarity));
+                    }
                 }
             }
 
-            // Keyword Search (Vectorless RAG)
-            if (request.Mode.Equals("Vectorless", StringComparison.OrdinalIgnoreCase) || request.Mode.Equals("Hybrid", StringComparison.OrdinalIgnoreCase))
+            // 4. KEYWORD SEARCH (Vectorless fallback)
+            if (request.Mode.Equals("Vectorless", StringComparison.OrdinalIgnoreCase))
             {
                 var keywords = request.Query.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                    .Where(k => k.Length > 2)
-                    .Select(k => k.ToLower())
-                    .Take(4)
-                    .ToList();
+                    .Where(k => k.Length > 2).Select(k => k.ToLower()).Take(4).ToList();
 
                 if (keywords.Count > 0)
                 {
@@ -118,10 +176,10 @@ public class RAGQueryUseCase
                     var distinctItems = keywordMatches.DistinctBy(c => c.Id).Take(5).ToList();
                     foreach (var item in distinctItems)
                     {
-                        // Deduplicate if already added in Vector search
-                        if (matchedPayloads.Any(p => p.Payload.ContentItemId == item.Id)) continue;
-                        
-                        matchedPayloads.Add((item.Payload!, 0.75)); // Default keyword matching score
+                        if (!matchedPayloads.Any(p => p.Payload.ContentItemId == item.Id))
+                        {
+                            matchedPayloads.Add((item.Payload!, 0.75));
+                        }
                     }
                 }
             }
@@ -140,6 +198,28 @@ public class RAGQueryUseCase
                 });
 
                 contextText.Add(FormatContextBlock(match.Payload, request.Query, useFullText: false));
+            }
+
+            // 5. MEMORY & BEHAVIOR RETRIEVER
+            if (intent.IsMemoryQuery || intent.Intents.Any())
+            {
+                var memoryContexts = new List<string>();
+                var matchedIntents = await _context.UserIntents
+                    .Where(x => x.UserId == userId && !x.IsDeleted && !x.IsResolved)
+                    .ToListAsync(ct);
+
+                foreach (var mIntent in matchedIntents)
+                {
+                    if (intent.Intents.Any(i => mIntent.GoalDescription.Contains(i, StringComparison.OrdinalIgnoreCase)) || intent.Intents.Count == 0)
+                    {
+                        memoryContexts.Add($"- Intent: {mIntent.GoalDescription} (Confidence: {Math.Round(mIntent.Confidence * 100)}%)");
+                    }
+                }
+
+                if (memoryContexts.Any())
+                {
+                    contextText.Add("[USER MEMORY]\n" + string.Join("\n", memoryContexts));
+                }
             }
         }
 
@@ -174,7 +254,7 @@ public class RAGQueryUseCase
         var focusAreas = JsonSerializer.Deserialize<List<string>>(mindset.FocusAreasJson) ?? new List<string>();
 
         // Fetch top interest categories and active intents
-        var topInterests = await _context.UserInterestProfiles
+        var topInterests = await _context.UserInterests
             .Where(x => x.UserId == userId && !x.IsDeleted && x.Score >= 50)
             .OrderByDescending(x => x.Score)
             .Select(x => $"{x.Category} ({x.Score}%)")

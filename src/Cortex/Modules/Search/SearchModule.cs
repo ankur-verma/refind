@@ -11,6 +11,10 @@ public static class SearchModule
     {
         // Services
         services.AddScoped<IUserMindsetService, UserMindsetService>();
+        services.AddScoped<IInterestScoringService, InterestScoringService>();
+        services.AddScoped<IInterestTrendAnalyzer, InterestTrendAnalyzer>();
+        services.AddScoped<IInterestEngine, InterestEngine>();
+        services.AddScoped<IRecommendationService, RecommendationService>();
 
         // Use cases
         services.AddScoped<SemanticSearchUseCase>();

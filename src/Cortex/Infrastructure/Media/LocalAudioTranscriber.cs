@@ -79,7 +79,7 @@ public class LocalAudioTranscriber : IDisposable
     {
         _logger.LogWarning("Local Whisper transcription is disabled on x86_64 macOS to prevent native library crash.");
         return null;
-
+#pragma warning disable CS0162
         if (_factory is not null)
             return _factory;
 

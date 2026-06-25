@@ -11,5 +11,8 @@ public enum PlatformType
     Instagram,
     PDF,
     TikTok,
-    Video
+    Video,
+    Article,
+    Shopping,
+    Maps
 }

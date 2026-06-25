@@ -29,10 +29,36 @@ public class CortexDbContext : DbContext
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<UserInteraction> UserInteractions => Set<UserInteraction>();
-    public DbSet<UserInterestProfile> UserInterestProfiles => Set<UserInterestProfile>();
+    public DbSet<UserInterest> UserInterests => Set<UserInterest>();
+    public DbSet<InterestHistory> InterestHistories => Set<InterestHistory>();
+    public DbSet<UserBehaviorEvent> UserBehaviorEvents => Set<UserBehaviorEvent>();
+    public DbSet<UserMLProfile> UserMLProfiles => Set<UserMLProfile>();
     public DbSet<UserIntent> UserIntents => Set<UserIntent>();
     public DbSet<VideoSegment> VideoSegments => Set<VideoSegment>();
     public DbSet<AutoCollection> AutoCollections => Set<AutoCollection>();
+    public DbSet<CollectionMembership> CollectionMemberships => Set<CollectionMembership>();
+    public DbSet<ContentInsight> ContentInsights => Set<ContentInsight>();
+    public DbSet<SemanticEntity> SemanticEntities => Set<SemanticEntity>();
+    public DbSet<Location> Locations => Set<Location>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<UserRecommendation> UserRecommendations => Set<UserRecommendation>();
+    public DbSet<ProactiveMemory> ProactiveMemories => Set<ProactiveMemory>();
+    
+    // Smart Collections (FE-14)
+    public DbSet<SmartCollection> SmartCollections => Set<SmartCollection>();
+    public DbSet<SmartCollectionItem> SmartCollectionItems => Set<SmartCollectionItem>();
+    public DbSet<SmartCollectionSignal> SmartCollectionSignals => Set<SmartCollectionSignal>();
+    
+    // Memory UX (FE-14)
+    public DbSet<MemoryTimelineEvent> MemoryTimelineEvents => Set<MemoryTimelineEvent>();
+    public DbSet<MemoryRecommendation> MemoryRecommendations => Set<MemoryRecommendation>();
+
+    // Join tables
+    public DbSet<ContentInsightEntity> ContentInsightEntities => Set<ContentInsightEntity>();
+    public DbSet<ContentInsightLocation> ContentInsightLocations => Set<ContentInsightLocation>();
+    public DbSet<ContentInsightProduct> ContentInsightProducts => Set<ContentInsightProduct>();
+    public DbSet<ContentInsightBrand> ContentInsightBrands => Set<ContentInsightBrand>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +66,8 @@ public class CortexDbContext : DbContext
 
         // Enable pgvector extension
         modelBuilder.HasPostgresExtension("vector");
+
+
 
         // Apply all IEntityTypeConfiguration implementations
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CortexDbContext).Assembly);

@@ -38,7 +38,14 @@ public class RabbitMqMessageBroker : IMessageBroker
         await DeclareTopologyAsync(channel, queueName, ct);
 
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
-        var properties = new BasicProperties { Persistent = true };
+        var properties = new BasicProperties 
+        { 
+            Persistent = true,
+            Headers = new Dictionary<string, object?>()
+        };
+
+        var traceId = System.Diagnostics.Activity.Current?.Id ?? Guid.NewGuid().ToString();
+        properties.Headers.Add("x-correlation-id", traceId);
 
         await channel.BasicPublishAsync(
             exchange: string.Empty,

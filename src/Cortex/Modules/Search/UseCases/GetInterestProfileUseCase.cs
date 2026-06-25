@@ -30,7 +30,7 @@ public class GetInterestProfileUseCase
 
     public async Task<Result<UserInterestProfileResponse>> ExecuteAsync(Guid userId, CancellationToken ct = default)
     {
-        var categories = await _context.UserInterestProfiles
+        var categories = await _context.UserInterests
             .Where(x => x.UserId == userId && !x.IsDeleted)
             .OrderByDescending(x => x.Score)
             .Select(x => new InterestCategoryResponse(x.Category, x.Score, x.Trend, x.LastCalculated))

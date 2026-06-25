@@ -16,6 +16,9 @@ using RabbitMQ.Client;
 using Serilog;
 using StackExchange.Redis;
 using System.Text;
+using Serilog.Formatting.Compact;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +29,7 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .WriteTo.Console();
+        .WriteTo.Console(new CompactJsonFormatter());
 });
 
 // Add standard Web API controllers and Swagger documentation
@@ -75,6 +78,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
     return ConnectionMultiplexer.Connect(options);
 });
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
+builder.Services.AddDistributedMemoryCache();
 
 // Messaging (RabbitMQ ConnectionFactory & MessageBroker)
 var rabbitSettings = builder.Configuration.GetSection("RabbitMq").Get<RabbitMqSettings>() ?? new RabbitMqSettings();
@@ -100,6 +104,10 @@ else
 }
 builder.Services.AddHttpClient<IPythonAIService, PythonAIService>();
 builder.Services.AddHostedService<AIExtractionWorker>();
+builder.Services.AddHostedService<Cortex.Modules.Search.Workers.BehaviorAnalyticsWorker>();
+
+// Graph DB
+builder.Services.AddSingleton<Cortex.Infrastructure.Graph.IGraphService, Cortex.Infrastructure.Graph.Neo4jGraphService>();
 
 // Register Vertical Slice Modules
 builder.Services.AddAuthModule(builder.Configuration);
@@ -107,12 +115,26 @@ builder.Services.AddContentModule(builder.Configuration);
 builder.Services.AddDripModule(builder.Configuration);
 builder.Services.AddSearchModule(builder.Configuration);
 
-// QuickBoost AI services registration
-builder.Services.AddScoped<Cortex.Services.IInterestProfiler, Cortex.Services.InterestProfiler>();
-builder.Services.AddScoped<Cortex.Services.IVideoFetcher, Cortex.Services.VideoFetcher>();
-builder.Services.AddScoped<Cortex.Services.ITranscriptionService, Cortex.Services.TranscriptionService>();
-builder.Services.AddScoped<Cortex.Services.IEmotionAnalyzer, Cortex.Services.EmotionAnalyzer>();
-builder.Services.AddScoped<Cortex.Services.IClipSelector, Cortex.Services.ClipSelector>();
+// Add Health Checks
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("CortexDatabase")!)
+    .AddRedis(redisSettings.ConnectionString)
+    .AddRabbitMQ();
+
+// Add OpenTelemetry
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracerProviderBuilder =>
+    {
+        tracerProviderBuilder
+            .AddSource("Cortex.*")
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Cortex.Api"))
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddConsoleExporter();
+    });
+
+
 
 
 // Setup Authentication
@@ -173,6 +195,9 @@ app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseSerilogRequestLogging();
 
+// Correlation ID Middleware
+app.UseMiddleware<Cortex.Middleware.CorrelationIdMiddleware>();
+
 // Global Exception Handler
 app.UseMiddleware<Cortex.Middleware.ExceptionHandlingMiddleware>();
 
@@ -183,6 +208,8 @@ app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 app.MapHub<ContentHub>("/hubs/content");

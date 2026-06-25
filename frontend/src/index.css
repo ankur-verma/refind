@@ -1,46 +1,32 @@
-:root {
-  /* Modern neutral palette — light mode */
-  --bg-app: #f8f9fb;
-  --bg-sidebar: #ffffff;
-  --bg-card: #ffffff;
-  --bg-modal: #ffffff;
-  --bg-hover: rgba(99, 102, 241, 0.06);
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-tertiary: #9ca3af;
-  --border-light: #e5e7eb;
-  --border-focus: rgba(99, 102, 241, 0.5);
-  --border-color: #e5e7eb;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  /* Vibrant Multi-Color Accent (Gemini-inspired) */
-  --accent: #8b5cf6; /* Vibrant violet */
-  --accent-light: rgba(139, 92, 246, 0.1);
-  --accent-hover: #7c3aed;
-  
-  --gradient-gemini: linear-gradient(135deg, #4f46e5 0%, #d946ef 50%, #f59e0b 100%);
-  --gradient-gemini-hover: linear-gradient(135deg, #4338ca 0%, #c026d3 50%, #d97706 100%);
-
-  --color-green: #10b981;
-  --color-green-bg: rgba(16, 185, 129, 0.1);
-  --color-red: #ef4444;
-  --color-red-bg: rgba(239, 68, 68, 0.1);
-  --color-orange: #f59e0b;
-  --color-orange-bg: rgba(245, 158, 11, 0.1);
-  --color-pink: #ec4899;
-
-  /* Elevation shadows (Apple-style) */
-  --shadow-premium: 0 12px 32px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.02);
-  --shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
-
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --radius-lg: 16px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
+    /* DEFAULT TO DARK MODE */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --radius: 0.5rem;
+
+    /* Legacy Dark */
     --bg-app: #0f1117;
     --bg-sidebar: #161822;
     --bg-card: #1a1d27;
@@ -52,23 +38,76 @@
     --border-light: #2d3040;
     --border-focus: rgba(129, 140, 248, 0.5);
     --border-color: #2d3040;
-
-    /* Vibrant Multi-Color Accent (Dark Mode) */
-    --accent: #a78bfa;
+    --accent-legacy: #a78bfa;
     --accent-light: rgba(167, 139, 250, 0.15);
     --accent-hover: #c4b5fd;
-
     --gradient-gemini: linear-gradient(135deg, #6366f1 0%, #e879f9 50%, #fbbf24 100%);
     --gradient-gemini-hover: linear-gradient(135deg, #818cf8 0%, #f0abfc 50%, #fcd34d 100%);
-
+    --color-green: #10b981;
     --color-green-bg: rgba(16, 185, 129, 0.15);
+    --color-red: #ef4444;
     --color-red-bg: rgba(239, 68, 68, 0.15);
+    --color-orange: #f59e0b;
     --color-orange-bg: rgba(245, 158, 11, 0.15);
     --color-pink: #f472b6;
-
     --shadow-premium: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 20px -4px rgba(0, 0, 0, 0.4);
     --shadow-hover: 0 12px 28px -6px rgba(129, 140, 248, 0.15), 0 6px 16px -4px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+  }
+}
+
+.light {
+  /* LIGHT MODE (opt-in) */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+
+  /* Legacy Palette */
+  --bg-app: #f8f9fb;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --bg-modal: #ffffff;
+  --bg-hover: rgba(99, 102, 241, 0.06);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --border-light: #e5e7eb;
+  --border-focus: rgba(99, 102, 241, 0.5);
+  --border-color: #e5e7eb;
+  --accent-legacy: #8b5cf6; 
+  --accent-light: rgba(139, 92, 246, 0.1);
+  --accent-hover: #7c3aed;
+  --shadow-premium: 0 12px 32px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.02);
+  --shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
 

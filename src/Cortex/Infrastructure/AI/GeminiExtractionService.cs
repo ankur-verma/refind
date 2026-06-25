@@ -143,6 +143,148 @@ public class GeminiExtractionService : IAIExtractionService
         }, () => CreateLocalEmbedding(text), ct);
     }
 
+    public async Task<ContentUnderstandingResult> ExtractInsightsAsync(string rawText, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(rawText))
+            return new ContentUnderstandingResult();
+
+        if (!CanUseApi())
+            return new ContentUnderstandingResult();
+
+        return await ExecuteWithRetriesAsync(async () =>
+        {
+            var systemPrompt = @"Analyze the provided content and extract structural insights.
+Return ONLY a raw JSON object matching this schema exactly:
+{
+  ""Category"": ""String (e.g. Technology, Food, Travel, Shopping)"",
+  ""SubCategory"": ""String"",
+  ""Intent"": ""String (e.g. Tutorial, Review, Place To Visit, Potential Purchase)"",
+  ""Sentiment"": ""String (e.g. Positive, Neutral, Negative)"",
+  ""Topics"": [""Array of Strings""],
+  ""Entities"": [""Array of Strings (General concepts, ideas)""],
+  ""Locations"": [""Array of Strings (Places, cities)""],
+  ""Products"": [""Array of Strings (Specific physical or digital items)""],
+  ""Brands"": [""Array of Strings (Companies, brands)""],
+  ""People"": [""Array of Strings (Names)""],
+  ""Events"": [""Array of Strings (Specific events)""]
+}";
+
+            var request = new
+            {
+                model = _settings.Gemini.CompletionModel,
+                messages = new object[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = Truncate(rawText, MaxInputCharacters) }
+                },
+                response_format = new { type = "json_object" },
+                temperature = 0.1,
+                max_tokens = 1000
+            };
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+            {
+                Content = ToJsonContent(request)
+            };
+
+            if (!string.IsNullOrWhiteSpace(_settings.Gemini.OpenAIApiKey) && _settings.Gemini.OpenAIApiKey != "ollama")
+            {
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.Gemini.OpenAIApiKey);
+            }
+
+            using var response = await _httpClient.SendAsync(requestMessage, ct);
+            response.EnsureSuccessStatusCode();
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            var content = document.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
+
+            if (string.IsNullOrWhiteSpace(content)) return new ContentUnderstandingResult();
+            
+            try
+            {
+                return JsonSerializer.Deserialize<ContentUnderstandingResult>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) 
+                       ?? new ContentUnderstandingResult();
+            }
+            catch (JsonException)
+            {
+                return new ContentUnderstandingResult();
+            }
+        }, () => new ContentUnderstandingResult(), ct);
+    }
+
+    public async Task<SearchIntentResult> ExtractSearchIntentAsync(string query, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return new SearchIntentResult();
+
+        if (!CanUseApi())
+            return new SearchIntentResult();
+
+        return await ExecuteWithRetriesAsync(async () =>
+        {
+            var systemPrompt = @"Analyze the user's natural language search query.
+Return ONLY a raw JSON object matching this schema exactly:
+{
+  ""IsKnowledgeGraphQuery"": true/false, // Set to true if the query mentions specific locations, entities, or topics they saved.
+  ""IsMemoryQuery"": true/false, // Set to true if the query asks about goals, plans, or intents (e.g. 'planning to buy', 'wanted to visit').
+  ""IsCollectionQuery"": true/false, // Set to true if the query asks about collections or grouped ideas (e.g. 'travel ideas for Bali').
+  ""Locations"": [""Array of Strings (Places, cities)""],
+  ""Entities"": [""Array of Strings (Things, gadgets, objects, e.g. cafe, drone)""],
+  ""Topics"": [""Array of Strings""],
+  ""Collections"": [""Array of Strings (Collection names)""],
+  ""Intents"": [""Array of Strings (e.g. 'buy', 'visit', 'read')""],
+  ""TimeFrame"": ""String""
+}";
+
+            var request = new
+            {
+                model = _settings.Gemini.CompletionModel,
+                messages = new object[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = Truncate(query, MaxInputCharacters) }
+                },
+                response_format = new { type = "json_object" },
+                temperature = 0.1,
+                max_tokens = 500
+            };
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+            {
+                Content = ToJsonContent(request)
+            };
+
+            if (!string.IsNullOrWhiteSpace(_settings.Gemini.OpenAIApiKey) && _settings.Gemini.OpenAIApiKey != "ollama")
+            {
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.Gemini.OpenAIApiKey);
+            }
+
+            using var response = await _httpClient.SendAsync(requestMessage, ct);
+            response.EnsureSuccessStatusCode();
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            var content = document.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
+
+            if (string.IsNullOrWhiteSpace(content)) return new SearchIntentResult();
+            
+            try
+            {
+                return JsonSerializer.Deserialize<SearchIntentResult>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) 
+                       ?? new SearchIntentResult();
+            }
+            catch (JsonException)
+            {
+                return new SearchIntentResult();
+            }
+        }, () => new SearchIntentResult(), ct);
+    }
+
     public async Task<List<(string Description, string Type, int Order)>> ExtractActionsAsync(string rawText, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(rawText))
@@ -170,7 +312,17 @@ public class GeminiExtractionService : IAIExtractionService
                 max_tokens = 700
             };
 
-            using var response = await _httpClient.PostAsync("chat/completions", ToJsonContent(request), ct);
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+            {
+                Content = ToJsonContent(request)
+            };
+
+            if (!string.IsNullOrWhiteSpace(_settings.Gemini.OpenAIApiKey) && _settings.Gemini.OpenAIApiKey != "ollama")
+            {
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.Gemini.OpenAIApiKey);
+            }
+
+            using var response = await _httpClient.SendAsync(requestMessage, ct);
             response.EnsureSuccessStatusCode();
             using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             var content = document.RootElement
@@ -224,7 +376,7 @@ public class GeminiExtractionService : IAIExtractionService
                 .GetProperty("content")
                 .GetString()?
                 .Trim() ?? "Failed to generate AI response.";
-        }, () => "Failed to generate AI response due to API connection errors.", ct);
+        }, () => "Failed to generate AI response due to API connection errors. Please ensure a valid API key is configured.", ct);
     }
 
     public async Task<string> DescribeVideoFramesAsync(List<VideoKeyframe> keyframes, CancellationToken ct = default)
@@ -312,7 +464,12 @@ public class GeminiExtractionService : IAIExtractionService
             using var fileContent = new StreamContent(fileStream);
             fileContent.Headers.ContentType = new MediaTypeHeaderValue("video/mp4");
             
-            using var uploadResponse = await _httpClient.PostAsync(uploadUrl, fileContent, ct);
+            using var uploadRequest = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+            uploadRequest.Headers.Add("X-Goog-Upload-Protocol", "raw");
+            uploadRequest.Headers.Add("X-Goog-Upload-File-Name", Path.GetFileName(mp4FilePath));
+            uploadRequest.Content = fileContent;
+            
+            using var uploadResponse = await _httpClient.SendAsync(uploadRequest, ct);
             uploadResponse.EnsureSuccessStatusCode();
             using var uploadDoc = JsonDocument.Parse(await uploadResponse.Content.ReadAsStringAsync(ct));
             var fileNode = uploadDoc.RootElement.GetProperty("file");

@@ -4,14 +4,26 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Refind.Cortex.Models;
+using Cortex.Infrastructure.AI;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Refind.Cortex.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class QuickBoostController : ControllerBase
     {
+        private readonly IPythonAIService _aiService;
         private const string MetadataPath = "App_Data/videoMetadata.json";
+
+        public QuickBoostController(IPythonAIService aiService)
+        {
+            _aiService = aiService;
+        }
 
         private class VideoMetadata
         {

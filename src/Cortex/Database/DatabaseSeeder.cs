@@ -20,12 +20,17 @@ public class DatabaseSeeder
     {
         try
         {
-            await _context.Database.MigrateAsync();
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                // await _context.Database.MigrateAsync();
 
-            await SeedTagsAsync();
-            // Subscriptions and other master data can be seeded here
+                await SeedTagsAsync();
+                // Subscriptions and other master data can be seeded here
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
+            });
+
             _logger.LogInformation("Database seeding completed successfully.");
         }
         catch (Exception ex)

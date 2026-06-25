@@ -80,6 +80,126 @@ public class OllamaExtractionService : IAIExtractionService
         }, Array.Empty<float>, ct);
     }
 
+    public async Task<ContentUnderstandingResult> ExtractInsightsAsync(string rawText, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(rawText))
+            return new ContentUnderstandingResult();
+
+        return await ExecuteWithRetriesAsync(async () =>
+        {
+            var systemPrompt = @"Analyze the provided content and extract structural insights.
+Return ONLY a raw JSON object matching this schema exactly:
+{
+  ""Category"": ""String (e.g. Technology, Food, Travel, Shopping)"",
+  ""SubCategory"": ""String"",
+  ""Intent"": ""String (e.g. Tutorial, Review, Place To Visit, Potential Purchase)"",
+  ""Sentiment"": ""String (e.g. Positive, Neutral, Negative)"",
+  ""Topics"": [""Array of Strings""],
+  ""Entities"": [""Array of Strings (General concepts, ideas)""],
+  ""Locations"": [""Array of Strings (Places, cities)""],
+  ""Products"": [""Array of Strings (Specific physical or digital items)""],
+  ""Brands"": [""Array of Strings (Companies, brands)""],
+  ""People"": [""Array of Strings (Names)""],
+  ""Events"": [""Array of Strings (Specific events)""]
+}";
+
+            var request = new
+            {
+                model = _settings.LocalOllama.CompletionModel,
+                messages = new[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = Truncate(rawText, MaxInputCharacters) }
+                },
+                format = "json",
+                stream = false,
+                options = new { temperature = 0.1 }
+            };
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "api/chat")
+            {
+                Content = ToJsonContent(request)
+            };
+
+            using var response = await _httpClient.SendAsync(requestMessage, ct);
+            response.EnsureSuccessStatusCode();
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            var content = doc.RootElement.GetProperty("message").GetProperty("content").GetString();
+
+            if (string.IsNullOrWhiteSpace(content)) return new ContentUnderstandingResult();
+            
+            try
+            {
+                return JsonSerializer.Deserialize<ContentUnderstandingResult>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) 
+                       ?? new ContentUnderstandingResult();
+            }
+            catch (JsonException)
+            {
+                return new ContentUnderstandingResult();
+            }
+        }, () => new ContentUnderstandingResult(), ct);
+    }
+
+    public async Task<SearchIntentResult> ExtractSearchIntentAsync(string query, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return new SearchIntentResult();
+
+        return await ExecuteWithRetriesAsync(async () =>
+        {
+            var systemPrompt = @"Analyze the user's natural language search query.
+Return ONLY a raw JSON object matching this schema exactly:
+{
+  ""IsKnowledgeGraphQuery"": true/false,
+  ""IsMemoryQuery"": true/false,
+  ""IsCollectionQuery"": true/false,
+  ""Locations"": [""Array of Strings (Places, cities)""],
+  ""Entities"": [""Array of Strings (Things, gadgets, objects, e.g. cafe, drone)""],
+  ""Topics"": [""Array of Strings""],
+  ""Collections"": [""Array of Strings (Collection names)""],
+  ""Intents"": [""Array of Strings (e.g. 'buy', 'visit', 'read')""],
+  ""TimeFrame"": ""String""
+}";
+
+            var request = new
+            {
+                model = _settings.LocalOllama.CompletionModel,
+                messages = new[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = Truncate(query, MaxInputCharacters) }
+                },
+                format = "json",
+                stream = false,
+                options = new { temperature = 0.1 }
+            };
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "api/chat")
+            {
+                Content = ToJsonContent(request)
+            };
+
+            using var response = await _httpClient.SendAsync(requestMessage, ct);
+            response.EnsureSuccessStatusCode();
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            var content = doc.RootElement.GetProperty("message").GetProperty("content").GetString();
+
+            if (string.IsNullOrWhiteSpace(content)) return new SearchIntentResult();
+            
+            try
+            {
+                return JsonSerializer.Deserialize<SearchIntentResult>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) 
+                       ?? new SearchIntentResult();
+            }
+            catch (JsonException)
+            {
+                return new SearchIntentResult();
+            }
+        }, () => new SearchIntentResult(), ct);
+    }
+
     public async Task<List<(string Description, string Type, int Order)>> ExtractActionsAsync(string rawText, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(rawText)) return new();

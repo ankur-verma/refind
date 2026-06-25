@@ -28,8 +28,8 @@ for item_id, title, summary in rows:
         
         for s in segments:
             cur.execute("""
-                INSERT INTO "VideoSegments" ("Id", "ContentItemId", "StartSeconds", "EndSeconds", "Title", "Summary", "CreatedAt", "IsDeleted")
-                VALUES (gen_random_uuid(), %s, %s, %s, %s, %s, NOW(), false)
+                INSERT INTO "VideoSegments" ("Id", "ContentItemId", "StartSeconds", "EndSeconds", "Title", "Summary", "Metadata", "CreatedAt", "IsDeleted")
+                VALUES (gen_random_uuid(), %s, %s, %s, %s, %s, '{}'::jsonb, NOW(), false)
             """, (item_id, s["start"], s["end"], s["title"], s["summary"]))
         
         conn.commit()

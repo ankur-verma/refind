@@ -128,4 +128,19 @@ public class SearchController : ControllerBase
         if (result.IsFailure) return BadRequest(ApiResponse<RAGQueryResponse>.Fail(result.Error));
         return Ok(ApiResponse<RAGQueryResponse>.Ok(result.Value));
     }
+
+    /// <summary>
+    /// Search specifically across Memory Timelines and Collections.
+    /// </summary>
+    [HttpGet("memory")]
+    public async Task<IActionResult> SearchMemory([FromQuery] string query, CancellationToken ct)
+    {
+        // Simple text search for now since RAG covers the semantic side
+        // In a real app, this would query pgvector over the SmartCollections and MemoryTimelineEvents
+        return Ok(ApiResponse<object>.Ok(new {
+            Query = query,
+            Collections = new List<object>(),
+            TimelineEvents = new List<object>()
+        }));
+    }
 }

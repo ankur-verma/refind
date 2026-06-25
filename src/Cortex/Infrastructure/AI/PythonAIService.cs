@@ -188,6 +188,89 @@ public class PythonAIService : IPythonAIService
         }
     }
 
+    public async Task<HybridRecommendationResponse?> GetHybridRecommendationsAsync(Guid userId, CancellationToken ct = default)
+    {
+        var request = new
+        {
+            user_id = userId.ToString(),
+            db_url = GetPostgreSqlUri(),
+            api_key = GetGeminiApiKey()
+        };
+
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync("api/ml/recommend_hybrid", request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Python AI hybrid recommendation failed: {Error}", err);
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<HybridRecommendationResponse>(cancellationToken: ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to communicate with Python AI hybrid recommend endpoint");
+            return null;
+        }
+    }
+
+    public async Task<bool> GenerateUserEmbeddingAsync(Guid userId, CancellationToken ct = default)
+    {
+        var request = new
+        {
+            user_id = userId.ToString(),
+            db_url = GetPostgreSqlUri(),
+            api_key = GetGeminiApiKey()
+        };
+
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync("api/ml/embed/user", request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Python ML generate embedding failed: {Error}", err);
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to communicate with Python ML embed endpoint");
+            return false;
+        }
+    }
+
+    public async Task<bool> TriggerClusteringAsync(CancellationToken ct = default)
+    {
+        var request = new
+        {
+            db_url = GetPostgreSqlUri(),
+            api_key = GetGeminiApiKey()
+        };
+
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync("api/ml/cluster", request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Python ML cluster users failed: {Error}", err);
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to communicate with Python ML cluster endpoint");
+            return false;
+        }
+    }
+
     private class VideoAnalyzeResponse
     {
         public List<VideoSegmentDto>? Segments { get; set; }
@@ -201,5 +284,113 @@ public class PythonAIService : IPythonAIService
     private class RecommendResponse
     {
         public List<RecommendedItemDto>? Recommendations { get; set; }
+    }
+
+    private class DynamicReelResponse
+    {
+        public bool Success { get; set; }
+        public List<DynamicReelItemDto>? Data { get; set; }
+    }
+
+    public async Task<List<DynamicReelItemDto>> GetDynamicReelAsync(Guid userId, int limit = 5, CancellationToken ct = default)
+    {
+        var request = new
+        {
+            user_id = userId.ToString(),
+            limit = limit,
+            db_url = GetPostgreSqlUri()
+        };
+
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync("api/ml/dynamic_reel", request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Python ML dynamic reel failed: {Error}", err);
+                return new List<DynamicReelItemDto>();
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<DynamicReelResponse>(cancellationToken: ct);
+            return result?.Data ?? new List<DynamicReelItemDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to communicate with Python ML dynamic reel endpoint");
+            return new List<DynamicReelItemDto>();
+        }
+    }
+
+    public async Task<bool> EmbedVideoSegmentsAsync(CancellationToken ct = default)
+    {
+        var request = new
+        {
+            db_url = GetPostgreSqlUri()
+        };
+
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync("api/ml/embed/segments", request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Python ML embed segments failed: {Error}", err);
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to communicate with Python ML embed segments endpoint");
+            return false;
+        }
+    }
+
+    public async Task<SynthesizeStartResponse> SynthesizeAIVideoAsync(List<string> transcripts, CancellationToken ct = default)
+    {
+        var request = new
+        {
+            transcripts = transcripts,
+            api_key = GetGeminiApiKey()
+        };
+
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync("api/ml/synthesize", request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Python ML synthesize video failed: {Error}", err);
+                return new SynthesizeStartResponse { TaskId = null };
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<SynthesizeStartResponse>(cancellationToken: ct);
+            return result ?? new SynthesizeStartResponse { TaskId = null };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to communicate with Python ML synthesize endpoint");
+            return new SynthesizeStartResponse { TaskId = null };
+        }
+    }
+
+    public async Task<SynthesizeStatusResponse?> GetSynthesisStatusAsync(string taskId, CancellationToken ct = default)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync($"api/ml/synthesize/status?task_id={taskId}", ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<SynthesizeStatusResponse>(cancellationToken: ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to communicate with Python ML synthesize status endpoint");
+            return null;
+        }
     }
 }

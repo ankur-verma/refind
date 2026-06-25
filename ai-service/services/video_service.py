@@ -97,15 +97,32 @@ def segment_transcript(transcript_segments, api_key, completion_model):
     
     system_prompt = (
         "You are an expert video intelligence assistant. Analyze the timestamped transcript "
-        "and segment it into logical topic clips. Return ONLY a valid JSON object matching this schema:\n"
+        "and perform deep video understanding. Segment it into logical topic clips. "
+        "For each clip, identify the segment_type (e.g., 'Hotel Segment', 'Restaurant Segment', 'Tip Segment'), "
+        "and extract specific entities discussed in that segment. "
+        "Return ONLY a valid JSON object matching this exact schema:\n"
         "{\n"
         "  \"segments\": [\n"
-        "    { \"start_seconds\": 0, \"end_seconds\": 180, \"title\": \"Segment Title\", \"summary\": \"Brief summary of what is discussed in this segment\" }\n"
+        "    {\n"
+        "      \"start_seconds\": 0,\n"
+        "      \"end_seconds\": 180,\n"
+        "      \"title\": \"Segment Title\",\n"
+        "      \"summary\": \"Brief summary of what is discussed in this segment\",\n"
+        "      \"segment_type\": \"Descriptive Type\",\n"
+        "      \"topics\": [\"Topic 1\", \"Topic 2\"],\n"
+        "      \"products\": [\"Product 1\"],\n"
+        "      \"locations\": [\"City, Country\"],\n"
+        "      \"restaurants\": [\"Restaurant Name\"],\n"
+        "      \"tips\": [\"Helpful Tip Mentioned\"],\n"
+        "      \"prices\": [\"$50\", \"€20\"],\n"
+        "      \"recommendations\": [\"Recommended Place or Item\"]\n"
+        "    }\n"
         "  ]\n"
-        "}"
+        "}\n"
+        "If a specific entity array (like products or prices) has no relevant items, return an empty array [] for it."
     )
     
-    user_prompt = f"Analyze the following video transcript segments:\n{transcript_text}\n\nSplit this video into logical topic segments."
+    user_prompt = f"Analyze the following video transcript segments and perform deep understanding:\n{transcript_text}\n\nSplit this video into logical topic segments with full entity extraction."
     
     response_content = call_gemini_openai_compat(api_key, completion_model, system_prompt, user_prompt)
     data = json.loads(response_content)
@@ -141,12 +158,27 @@ def analyze_video_file_native(mp4_file_path, api_key, completion_model="gemini-2
         
         prompt = (
             "Analyze this video and return its topic segmentation in JSON format. "
-            "Return ONLY a JSON object with this structure:\n"
+            "Perform deep video understanding by extracting specific entities discussed in each segment. "
+            "Return ONLY a JSON object with this exact structure:\n"
             "{\n"
             "  \"segments\": [\n"
-            "    { \"start_seconds\": 0, \"end_seconds\": 120, \"title\": \"Introduction\", \"summary\": \"Explaining the overview of the video topic\" }\n"
+            "    {\n"
+            "      \"start_seconds\": 0,\n"
+            "      \"end_seconds\": 120,\n"
+            "      \"title\": \"Introduction\",\n"
+            "      \"summary\": \"Explaining the overview of the video topic\",\n"
+            "      \"segment_type\": \"General Overview\",\n"
+            "      \"topics\": [\"Introduction\"],\n"
+            "      \"products\": [],\n"
+            "      \"locations\": [],\n"
+            "      \"restaurants\": [],\n"
+            "      \"tips\": [],\n"
+            "      \"prices\": [],\n"
+            "      \"recommendations\": []\n"
+            "    }\n"
             "  ]\n"
-            "}"
+            "}\n"
+            "If a specific entity array has no relevant items, return an empty array [] for it."
         )
         
         model = genai.GenerativeModel(completion_model)

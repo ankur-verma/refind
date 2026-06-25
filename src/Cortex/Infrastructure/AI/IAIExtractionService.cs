@@ -12,5 +12,7 @@ public interface IAIExtractionService
     Task<string> GetChatCompletionAsync(string systemMessage, string userMessage, CancellationToken ct = default);
     Task<string> DescribeVideoFramesAsync(List<VideoKeyframe> keyframes, CancellationToken ct = default);
     Task<string> AnalyzeVideoFileAsync(string mp4FilePath, string prompt, CancellationToken ct = default);
+    Task<ContentUnderstandingResult> ExtractInsightsAsync(string rawText, CancellationToken ct = default);
+    Task<SearchIntentResult> ExtractSearchIntentAsync(string query, CancellationToken ct = default);
 }
 

@@ -44,7 +44,7 @@ public class GlobalChatController : ControllerBase
     {
         var result = await _chatUseCase.DeleteSessionAsync(GetUserId(), id, ct);
         if (result.IsFailure) return BadRequest(ApiResponse<object>.Fail(result.Error));
-        return Ok(ApiResponse<object>.Ok(null));
+        return Ok(ApiResponse<object>.Ok(new object()));
     }
 
     [HttpGet("{id}/messages")]

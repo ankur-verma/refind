@@ -41,15 +41,33 @@ public static class ContentModule
         services.AddScoped<IActionItemRepository, ActionItemRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
 
-        // Processors & Factory
-        services.AddHttpClient<YouTubeContentProcessor>();
-        services.AddHttpClient<WebPageContentProcessor>();
-        services.AddHttpClient<InstagramContentProcessor>();
-        services.AddHttpClient<PdfContentProcessor>();
-        services.AddHttpClient<TikTokContentProcessor>();
-        services.AddHttpClient<VideoContentProcessor>();
-
-        services.AddScoped<IContentProcessorFactory, ContentProcessorFactory>();
+        // Pipeline & Sources
+        services.AddScoped<ContentIngestionPipeline>();
+        
+        // Smart Collection Engine
+        services.AddSingleton<Cortex.Modules.Content.Domain.Rules.IRulesEngine, Cortex.Modules.Content.Domain.Rules.RulesEngine>();
+        services.AddScoped<ICollectionMembershipEngine, CollectionMembershipEngine>();
+        services.AddScoped<ICollectionGenerator, CollectionGenerator>();
+        
+        // Proactive Memory Engine
+        services.AddSingleton<IContextService, ContextService>();
+        services.AddScoped<IMemoryService, MemoryService>();
+        services.AddScoped<IReminderService, ReminderService>();
+        
+        // Workers
+        services.AddHostedService<CollectionGeneratorWorker>();
+        services.AddHostedService<MemoryLifecycleWorker>();
+        services.AddHostedService<GraphSyncWorker>();
+        
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.YouTubeSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.InstagramSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.TikTokSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.VideoSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.ArticleSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.WebPageSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.PDFSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.ShoppingSource>();
+        services.AddHttpClient<Cortex.Modules.Content.Domain.IContentSource, Cortex.Modules.Content.Services.Sources.MapsSource>();
 
         // Social import services
         services.AddHttpClient<YouTubeImportService>();

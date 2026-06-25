@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Cortex.Shared;
 using Cortex.Modules.Search.DTOs;
+using System.Security.Claims;
 
 namespace Cortex.Controllers
 {
@@ -176,6 +177,53 @@ namespace Cortex.Controllers
                     Emotion: "inspirational"
                 )
             };
+        }
+
+        [HttpGet("dynamic-reel")]
+        public async Task<ActionResult<IEnumerable<DynamicReelItemDto>>> GetDynamicReel([FromQuery] int limit = 5, CancellationToken ct = default)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!System.Guid.TryParse(userIdStr, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var reel = await _aiService.GetDynamicReelAsync(userId, limit, ct);
+            return Ok(reel);
+        }
+
+        public class SynthesizeVideoRequest
+        {
+            public List<string> Transcripts { get; set; } = new();
+        }
+
+        [HttpPost("synthesize")]
+        public async Task<ActionResult<SynthesizeStartResponse>> SynthesizeVideo([FromBody] SynthesizeVideoRequest request, CancellationToken ct = default)
+        {
+            if (request.Transcripts == null || !request.Transcripts.Any())
+            {
+                return BadRequest("Transcripts are required.");
+            }
+
+            var response = await _aiService.SynthesizeAIVideoAsync(request.Transcripts, ct);
+            if (string.IsNullOrEmpty(response.TaskId))
+            {
+                return StatusCode(500, "Failed to start synthesis task.");
+            }
+
+            return Ok(response);
+        }
+
+        [HttpGet("synthesize/{taskId}/status")]
+        public async Task<ActionResult<SynthesizeStatusResponse>> GetSynthesisStatus(string taskId, CancellationToken ct = default)
+        {
+            var response = await _aiService.GetSynthesisStatusAsync(taskId, ct);
+            if (response == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(response);
         }
     }
 }
